@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SchwälmerNest - CRM & Kursmanagement</title>
+  <style>
+    :root {
+      --primary: #1b4332;
+      --primary-light: #2d6a4f;
+      --accent: #52b788;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+    
+    aside { width: 260px; background-color: var(--primary); color: white; display: flex; flex-direction: column; justify-content: space-between; flex-shrink: 0; z-index: 10; }
+    main { flex: 1; padding: 30px; overflow-y: auto; }
+    
+    .brand { padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .brand h1 { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .brand p { font-size: 0.75rem; color: #b7e4c7; margin-top: 4px; }
+    
+    nav { padding: 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .nav-btn { background: none; border: none; color: #d8f3dc; padding: 12px 16px; border-radius: 8px; text-align: left; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; width: 100%; }
+    .nav-btn:hover { background-color: rgba(255,255,255,0.08); }
+    .nav-btn.active { background-color: var(--primary-light); color: white; font-weight: 600; }
+    
+    .tab-view { display: none; }
+    .tab-view.active-view { display: block; }
+
+    .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem; white-space: nowrap; }
+    th { background: #f1f5f9; padding: 10px 10px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); text-align: center; }
+    th:first-child, th:nth-child(2), th:nth-child(3) { text-align: left; }
+    td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; text-align: center; }
+    td:first-child, td:nth-child(2), td:nth-child(3) { text-align: left; }
+    tr:hover { background-color: #f8fafc; }
+
+    .group-header-row td { background: #e2e8f0; font-weight: 700; color: var(--primary); text-align: left; padding: 8px 12px; font-size: 0.88rem; }
+
+    .badge { display: inline-block; padding: 3px 7px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: 0.1s; }
+    .badge:hover { opacity: 0.8; transform: scale(1.05); }
+    .badge-present { background: #dcfce7; color: #166534; }
+    .badge-excused { background: #fee2e2; color: #991b1b; }
+    .badge-closed  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-open { background: #f1f5f9; color: var(--text-muted); border: 1px dashed var(--border); }
+
+    .counter-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; background: #e0f2fe; color: #0369a1; }
+    .counter-complete { background: #dcfce7; color: #166534; }
+
+    .badge-paid { background: #dcfce7; color: #166534; }
+    .badge-sent { background: #fef3c7; color: #92400e; }
+    .badge-course { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-type-active { background: #e0f2fe; color: #0369a1; }
+    .badge-type-former { background: #f1f5f9; color: #475569; }
+    .badge-type-lead { background: #fef9c3; color: #854d0e; }
+    .badge-type-other { background: #f3e8ff; color: #6b21a8; }
+    
+    .btn { background: var(--primary-light); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn:hover { background: var(--primary); }
+    .btn-wa { background: #25D366; }
+    .btn-wa:hover { background: #1ebe5d; }
+    .btn-outline { background: white; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: #f1f5f9; }
+    .btn-outline.active { background: var(--primary-light); color: white; border-color: var(--primary-light); font-weight: 600; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover { background: #dc2626; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 50; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { background: white; border-radius: 12px; width: 680px; max-width: 95%; max-height: 90vh; overflow-y: auto; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.88rem; }
+
+    .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .doc-container { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 40px; max-width: 780px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .doc-header-logo { max-height: 70px; max-width: 220px; object-fit: contain; margin-bottom: 6px; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printable-area, #printable-area * { visibility: visible; }
+      #printable-area { position: absolute; left: 0; top: 0; width: 100%; padding: 15mm; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="no-print">
+    <div>
+      <div class="brand">
+        <h1>🐣 SchwälmerNest</h1>
+        <p>Kurs- & Kundenverwaltung</p>
+        <div style="font-size: 0.72rem; color: #b7e4c7; margin-top: 8px;">
+          <span id="sync-status">🟢 System aktiv</span>
+        </div>
+      </div>
+      <nav>
+        <button class="nav-btn active" id="btn-nav-customers" onclick="switchMainTab('customers')">👥 Kunden & Bearbeitung</button>
+        <button class="nav-btn" id="btn-nav-attendance" onclick="switchMainTab('attendance')">📅 Anwesenheitskalender</button>
+        <button class="nav-btn" id="btn-nav-messages" onclick="switchMainTab('messages')">💬 WhatsApp & Mail</button>
+        <button class="nav-btn" id="btn-nav-documents" onclick="switchMainTab('documents')">📄 Verträge & Rechnungen</button>
+      </nav>
+    </div>
+    <div style="padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; color: #b7e4c7;">
+      <strong>Katharina Reichrath</strong><br>
+      Uhlandstraße 18 · Neukirchen
+    </div>
+  </aside>
+
+  <main>
+    <!-- TAB 1: KUNDENDATENBANK -->
+    <section id="tab-customers" class="tab-view active-view">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h2 style="font-size: 1.5rem;">Kundendatenbank & Buchungen</h2>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">Folgekurse werden automatisch als eigenständige Buchung erfasst.</p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn" onclick="openNewCustomerModal()">➕ Neuen Kunden / Buchung anlegen</button>
+          <button class="btn btn-outline" onclick="loadFromCloud()">🔄 Aktualisieren</button>
+          <select id="filter-customer-type" onchange="renderCustomers()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.88rem;">
+            <option value="Aktiver Kunde" selected>Aktive Kunden (Standard)</option>
+            <option value="Alle">Alle Kunden anzeigen</option>
+            <option value="Ehem. Kunde">Ehem. Kunde</option>
+            <option value="Interessent">Interessent</option>
+            <option value="Sonstiges">Sonstiges</option>
+          </select>
+          <input type="text" id="searchInput" oninput="renderCustomers()" placeholder="Name, Kurs, Kind, Ort..." style="padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; width: 220px;">
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Kundenart</th>
+              <th>Teilnehmerin / Kontaktdaten</th>
+              <th>Kinder & Geburtsdaten (MM/YYYY)</th>
+              <th>Kurs & Startdatum</th>
+              <th>Rechnung / Betrag</th>
+              <th>Status</th>
+              <th style="text-align: right;">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="customer-table-body">
+            <tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">Lade Daten aus Tabellenblatt „Kunden“...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 2: ANWESENHEITSKALENDER GESPLITTET -->
+    <section id="tab-attendance" class="tab-view">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h2 style="font-size: 1.5rem;">Anwesenheitskalender</h2>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">
+            Getrennt nach BabySteps I & II (Basis 8 Termine) und MaxiSteps (Basis 12 Termine).
+          </p>
+        </div>
+        <div>
+          <select id="filter-attendance-type" onchange="renderAttendance()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.88rem;">
+            <option value="Aktiver Kunde" selected>Nur Aktive Kunden (Standard)</option>
+            <option value="Alle">Alle Teilnehmerinnen anzeigen</option>
+            <option value="Ehem. Kunde">Ehem. Kunde</option>
+            <option value="Interessent">Interessent</option>
+            <option value="Sonstiges">Sonstiges</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- KURS-SPLIT FILTER-TABS -->
+      <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+        <button class="btn btn-outline active" id="btn-filter-course-all" onclick="setAttendanceCourseFilter('all')">Alle Kurse</button>
+        <button class="btn btn-outline" id="btn-filter-course-bs1" onclick="setAttendanceCourseFilter('bs1')">🌱 BabySteps I</button>
+        <button class="btn btn-outline" id="btn-filter-course-bs2" onclick="setAttendanceCourseFilter('bs2')">🌿 BabySteps II</button>
+        <button class="btn btn-outline" id="btn-filter-course-maxi" onclick="setAttendanceCourseFilter('maxi')">🚀 MaxiSteps</button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr id="attendance-header-row"></tr>
+          </thead>
+          <tbody id="attendance-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 3: WHATSAPP & MAIL -->
+    <section id="tab-messages" class="tab-view">
+      <h2 style="font-size: 1.5rem; margin-bottom: 6px;">WhatsApp- & E-Mail-Zentrale</h2>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 20px;">Direkte Kontaktaufnahme mit personalisierten Vorlagen.</p>
+
+      <div style="display: grid; grid-template-columns: 320px 1fr; gap: 20px;">
+        <div class="stat-card" style="max-height: 520px; overflow-y: auto;" id="message-contact-list"></div>
+        <div class="stat-card">
+          <div style="font-weight: 600; margin-bottom: 10px;" id="msg-recipient-label">Empfänger auswählen</div>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <button class="btn btn-outline" style="font-size: 0.75rem;" onclick="setTemplate('invoice')">Rechnung</button>
+            <button class="btn btn-outline" style="font-size: 0.75rem;" onclick="setTemplate('welcome')">Willkommen</button>
+            <button class="btn btn-outline" style="font-size: 0.75rem;" onclick="setTemplate('reminder')">Kurserinnerung</button>
+          </div>
+          <textarea id="msg-text" style="width: 100%; height: 180px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; margin-bottom: 14px;"></textarea>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-wa" onclick="sendWhatsApp()">💬 Per WhatsApp senden</button>
+            <button class="btn btn-outline" onclick="sendEmail()">✉️ Als E-Mail öffnen</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: DOKUMENTE -->
+    <section id="tab-documents" class="tab-view">
+      <div class="no-print" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 8px;">
+            <button class="btn active" id="btn-doc-contract" onclick="switchDocType('contract')">📝 Teilnahmevertrag</button>
+            <button class="btn btn-outline" id="btn-doc-invoice" onclick="switchDocType('invoice')">🧾 Rechnung</button>
+            <button class="btn btn-outline" id="btn-doc-receipt" onclick="switchDocType('receipt')">💶 Barquittung</button>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline" onclick="openDocEditModal()">⚙️ Beleg & Positionen bearbeiten</button>
+            <label class="btn btn-outline" style="cursor: pointer;">
+              🖼️ Logo wählen
+              <input type="file" id="logo-uploader" accept="image/*" style="display: none;" onchange="handleLogoUpload(event)">
+            </label>
+            <button class="btn" onclick="window.print()">🖨️ Jetzt Drucken / PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="printable-area" class="doc-container"></div>
+    </section>
+  </main>
+
+  <!-- MODAL: KUNDE BEARBEITEN (INKL. LÖSCHEN) -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal-card">
+      <h3 style="font-size: 1.2rem; margin-bottom: 16px;">Buchungsdaten bearbeiten & überschreiben</h3>
+      <input type="hidden" id="edit-cust-id">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Kundenart</label>
+          <select id="edit-customer-type">
+            <option value="Aktiver Kunde">Aktiver Kunde</option>
+            <option value="Ehem. Kunde">Ehem. Kunde</option>
+            <option value="Interessent">Interessent</option>
+            <option value="Sonstiges">Sonstiges</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Name des Elternteils</label><input type="text" id="edit-name"></div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group"><label>Telefon / Mobilnummer</label><input type="text" id="edit-phone"></div>
+        <div class="form-group"><label>E-Mail-Adresse</label><input type="email" id="edit-email"></div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group"><label>Straße & Hausnummer</label><input type="text" id="edit-address"></div>
+        <div class="form-group"><label>PLZ & Wohnort</label><input type="text" id="edit-location"></div>
+      </div>
+      <div style="background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: 8px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="font-size: 0.8rem; font-weight: bold;">Kinder (Geburtsdatum: MM/YYYY)</label>
+          <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;" onclick="addChildField()">➕ Kind hinzufügen</button>
+        </div>
+        <div id="children-list-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Kurszuweisung</label>
+          <select id="edit-course">
+            <option value="BabySteps I">BabySteps I</option>
+            <option value="BabySteps II">BabySteps II</option>
+            <option value="MaxiSteps">MaxiSteps</option>
+            <option value="BabySigns">BabySigns</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Kursstart (DD.MM.YYYY)</label>
+          <input type="text" id="edit-coursestart" placeholder="z. B. 04.11.2026">
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Rechnungsnummer</label>
+          <input type="text" id="edit-inv" placeholder="z. B. 2026-012">
+        </div>
+        <div class="form-group">
+          <label>Gesamtpreis (€)</label>
+          <input type="number" step="0.5" id="edit-amount">
+        </div>
+      </div>
+      <div class="form-group"><label>Interne Notizen</label><textarea id="edit-notes" rows="2"></textarea></div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="edit-status"><option value="Offen">Offen</option><option value="RG versendet">RG versendet</option><option value="Bezahlt">Bezahlt</option></select>
+      </div>
+      
+      <!-- FOOTER MIT LÖSCH-BUTTON LINKS UND SPEICHERN RECHTS -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
+        <button class="btn btn-danger" onclick="deleteCurrentCustomer()">🗑️ Eintrag löschen</button>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-outline" onclick="closeEditModal()">Abbrechen</button>
+          <button class="btn" onclick="saveCustomerChanges()">Im Tabellenblatt überschreiben</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KUNDE MANUELL ANLEGEN -->
+  <div class="modal-overlay" id="new-modal">
+    <div class="modal-card">
+      <h3 style="font-size: 1.2rem; margin-bottom: 16px;">Neuen Kunden / neue Buchung manuell erfassen</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Kundenart</label>
+          <select id="new-customer-type">
+            <option value="Aktiver Kunde" selected>Aktiver Kunde</option>
+            <option value="Interessent">Interessent</option>
+            <option value="Ehem. Kunde">Ehem. Kunde</option>
+            <option value="Sonstiges">Sonstiges</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Name des Elternteils</label><input type="text" id="new-name" placeholder="Vor- und Nachname"></div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group"><label>Telefon</label><input type="text" id="new-phone" placeholder="017X-..."></div>
+        <div class="form-group"><label>E-Mail</label><input type="email" id="new-email" placeholder="name@domain.de"></div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group"><label>Straße</label><input type="text" id="new-address"></div>
+        <div class="form-group"><label>PLZ & Ort</label><input type="text" id="new-location"></div>
+      </div>
+      <div style="background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: 8px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="font-size: 0.8rem; font-weight: bold;">Kind(er)</label>
+          <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;" onclick="addNewChildField()">➕ Kind hinzufügen</button>
+        </div>
+        <div id="new-children-list-container" style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: grid; grid-template-columns: 1fr 140px 36px; gap: 8px; align-items: center;">
+            <input type="text" placeholder="Name des Kindes" class="new-child-name" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+            <input type="text" placeholder="MM/YYYY" class="new-child-birth" onblur="this.value = formatToMMYYYY(this.value)" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+            <div></div>
+          </div>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Kurs</label>
+          <select id="new-course">
+            <option value="BabySteps I">BabySteps I</option>
+            <option value="BabySteps II">BabySteps II</option>
+            <option value="MaxiSteps">MaxiSteps</option>
+            <option value="BabySigns">BabySigns</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Kursstart (DD.MM.YYYY)</label>
+          <input type="text" id="new-coursestart" placeholder="04.11.2026" value="04.11.2026">
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group"><label>Rechnungsnummer</label><input type="text" id="new-inv" placeholder="Automatisch leer lassen"></div>
+        <div class="form-group"><label>Gesamtpreis (€)</label><input type="number" step="0.5" id="new-amount" value="119"></div>
+      </div>
+      <div class="form-group"><label>Notizen</label><textarea id="new-notes" rows="2"></textarea></div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button class="btn btn-outline" onclick="closeNewCustomerModal()">Abbrechen</button>
+        <button class="btn" onclick="saveNewCustomer()">Im Tabellenblatt anlegen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DOKUMENTE BEARBEITEN -->
+  <div class="modal-overlay" id="doc-edit-modal">
+    <div class="modal-card" style="width: 700px;">
+      <h3 style="font-size: 1.2rem; margin-bottom: 16px;">Belegdetails & Positionen anpassen</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group"><label>Kursstart</label><input type="text" id="doc-course-start"></div>
+        <div class="form-group"><label>Rechnungsdatum</label><input type="text" id="doc-date"></div>
+      </div>
+      <div class="form-group"><label>Fälligkeit</label><input type="text" id="doc-due-text"></div>
+      <h4 style="font-size: 0.95rem; margin: 18px 0 8px 0; font-weight: bold;">Positionen</h4>
+      <div id="doc-items-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;"></div>
+      <button class="btn btn-outline" style="font-size: 0.8rem; margin-bottom: 16px;" onclick="addDocItem()">➕ Position hinzufügen</button>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid var(--border); padding-top: 14px;">
+        <div class="form-group"><label>Rabatt (€)</label><input type="number" step="0.5" id="doc-discount" value="0" oninput="calculateDocPreviewTotal()"></div>
+        <div style="text-align: right; display: flex; flex-direction: column; justify-content: center;">
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Gesamtbetrag:</span>
+          <span style="font-size: 1.3rem; font-weight: bold; color: var(--primary);" id="doc-preview-total">0,00 €</span>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button class="btn btn-outline" onclick="closeDocEditModal()">Abbrechen</button>
+        <button class="btn" onclick="saveDocSettings()">Übernehmen</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxR-T7jbqsOe3nSmDIKzFf_CQrPCEEi9LDeeC_xI0gQBGOC_P6pFb_94ywy_Hzcyvhr/exec";
+    let companyLogo = localStorage.getItem("sn_logo_base64") || "logo.png";
+
+    function handleLogoUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        companyLogo = evt.target.result;
+        localStorage.setItem("sn_logo_base64", companyLogo);
+        renderDocument();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    let customers = [];
+    let attendanceData = {};
+    let activeCustomer = null;
+    let currentDocType = "contract";
+    let attendanceCourseFilter = "all";
+
+    function setAttendanceCourseFilter(filter) {
+      attendanceCourseFilter = filter;
+      document.getElementById('btn-filter-course-all').className = (filter === 'all' ? 'btn btn-outline active' : 'btn btn-outline');
+      document.getElementById('btn-filter-course-bs1').className = (filter === 'bs1' ? 'btn btn-outline active' : 'btn btn-outline');
+      document.getElementById('btn-filter-course-bs2').className = (filter === 'bs2' ? 'btn btn-outline active' : 'btn btn-outline');
+      document.getElementById('btn-filter-course-maxi').className = (filter === 'maxi' ? 'btn btn-outline active' : 'btn btn-outline');
+      renderAttendance();
+    }
+
+    function formatToMMYYYY(val) {
+      if (val === null || val === undefined || val === "") return "";
+      let str = String(val).trim();
+      if (!str) return "";
+
+      if (str.includes(",")) {
+        return str.split(",").map(s => formatToMMYYYY(s.trim())).join(", ");
+      }
+
+      const months = {
+        "jan": "01", "feb": "02", "mrz": "03", "mär": "03", "mar": "03",
+        "apr": "04", "mai": "05", "may": "05", "jun": "06", "jul": "07",
+        "aug": "08", "sep": "09", "okt": "10", "oct": "10", "nov": "11", "dez": "12", "dec": "12"
+      };
+
+      const lower = str.toLowerCase();
+      for (let m in months) {
+        if (lower.includes(m)) {
+          const match = str.match(/\d{4}/);
+          if (match) return months[m] + "/" + match[0];
+        }
+      }
+
+      const yrMatch = str.match(/(20\d{2})/);
+      if (yrMatch) {
+        const yr = yrMatch[1];
+        const beforeYear = str.substring(0, str.indexOf(yr)).replace(/[^0-9]/g, " ").trim();
+        const parts = beforeYear.split(/\s+/).filter(Boolean);
+        if (parts.length > 0) {
+          const mo = parseInt(parts[parts.length - 1], 10);
+          if (mo >= 1 && mo <= 12) {
+            return String(mo).padStart(2, "0") + "/" + yr;
+          }
+        }
+      }
+
+      const slashParts = str.replace(/[.-]/g, "/").split("/").map(p => p.trim()).filter(Boolean);
+      if (slashParts.length === 2) {
+        const mo = parseInt(slashParts[0], 10);
+        if (mo >= 1 && mo <= 12 && slashParts[1].length === 4) {
+          return String(mo).padStart(2, "0") + "/" + slashParts[1];
+        }
+      }
+
+      return str;
+    }
+
+    function switchMainTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active-view'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      
+      const targetView = document.getElementById('tab-' + tabId);
+      if (targetView) targetView.classList.add('active-view');
+      
+      const targetBtn = document.getElementById('btn-nav-' + tabId);
+      if (targetBtn) targetBtn.classList.add('active');
+
+      try {
+        if (tabId === 'customers') renderCustomers();
+        else if (tabId === 'attendance') renderAttendance();
+        else if (tabId === 'messages') renderMessages();
+        else if (tabId === 'documents') renderDocument();
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    async function loadFromCloud() {
+      const statusEl = document.getElementById("sync-status");
+      if (statusEl) statusEl.textContent = "🟡 Lade Daten...";
+
+      try {
+        const res = await fetch(SCRIPT_URL + "?t=" + new Date().getTime(), { method: "GET", redirect: "follow" });
+        const data = await res.json();
+        
+        if (data && data.customers && Array.isArray(data.customers)) {
+          customers = data.customers.map(c => {
+            return {
+              ...c,
+              courseStart: c.courseStart || "04.11.2026",
+              children: (c.children || []).map(ch => ({
+                name: ch.name,
+                birth: formatToMMYYYY(ch.birth)
+              }))
+            };
+          });
+
+          if (data.attendance) attendanceData = data.attendance;
+          if (!activeCustomer && customers.length > 0) activeCustomer = customers[0];
+          if (statusEl) statusEl.textContent = "🟢 Tabellenblatt „Kunden“ aktiv (" + customers.length + ")";
+          renderAll();
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = "🔴 Sync-Fehler";
+      }
+    }
+
+    function renderAll() {
+      renderCustomers();
+      renderAttendance();
+      renderMessages();
+      renderDocument();
+    }
+
+    function renderCustomers() {
+      const q = (document.getElementById("searchInput")?.value || "").toLowerCase();
+      const typeFilter = document.getElementById("filter-customer-type")?.value || "Aktiver Kunde";
+      const tbody = document.getElementById("customer-table-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      const filtered = customers
+        .filter(c => {
+          if (typeFilter === "Alle") return true;
+          return (c.type || "Aktiver Kunde") === typeFilter;
+        })
+        .filter(c => {
+          const childMatch = (c.children || []).some(k => (k.name || '').toLowerCase().includes(q));
+          return (c.name || "").toLowerCase().includes(q) || (c.course || "").toLowerCase().includes(q) || (c.location || "").toLowerCase().includes(q) || childMatch;
+        });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">Keine Kunden mit Filter „${typeFilter}“ gefunden.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(c => {
+        const badgeClass = c.status === "Bezahlt" ? "badge-paid" : "badge-sent";
+        let typeClass = "badge-type-active";
+        if (c.type === "Ehem. Kunde") typeClass = "badge-type-former";
+        if (c.type === "Interessent") typeClass = "badge-type-lead";
+        if (c.type === "Sonstiges") typeClass = "badge-type-other";
+
+        const childrenHtml = (c.children || []).map(k => `<strong>${k.name}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(* ${formatToMMYYYY(k.birth) || '-'})</span>`).join("<br>");
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><span class="badge ${typeClass}">${c.type || 'Aktiver Kunde'}</span></td>
+          <td><strong>${c.name}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${c.address || ''}, ${c.location || ''}</span></td>
+          <td>${childrenHtml}</td>
+          <td><span class="badge badge-course">${c.course}</span><br><span style="font-size:0.72rem; color:var(--text-muted);">Start: ${c.courseStart || '04.11.2026'}</span></td>
+          <td><strong>${c.inv}</strong><br><span style="font-size:0.75rem;">${(c.amount || 0).toFixed(2).replace(".", ",")} €</span></td>
+          <td><span class="badge ${badgeClass}">${c.status}</span></td>
+          <td style="text-align: right;">
+            <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openEditModal(${c.id})">✏️ Bearbeiten</button>
+            <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="selectForDoc(${c.id})">📄 Belege</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    let tempChildren = [];
+
+    function openEditModal(id) {
+      const c = customers.find(x => x.id === id);
+      if (!c) return;
+      document.getElementById("edit-cust-id").value = c.id;
+      document.getElementById("edit-customer-type").value = c.type || "Aktiver Kunde";
+      document.getElementById("edit-name").value = c.name || "";
+      document.getElementById("edit-phone").value = c.phone || "";
+      document.getElementById("edit-email").value = c.email || "";
+      document.getElementById("edit-address").value = c.address || "";
+      document.getElementById("edit-location").value = c.location || "";
+      document.getElementById("edit-course").value = c.course || "BabySteps I";
+      document.getElementById("edit-coursestart").value = c.courseStart || "04.11.2026";
+      document.getElementById("edit-inv").value = c.inv || "";
+      document.getElementById("edit-notes").value = c.notes || "";
+      document.getElementById("edit-status").value = c.status || "Offen";
+      document.getElementById("edit-amount").value = c.amount || 119;
+
+      tempChildren = JSON.parse(JSON.stringify(c.children || [{ name: "", birth: "" }])).map(ch => ({
+        name: ch.name,
+        birth: formatToMMYYYY(ch.birth)
+      }));
+      renderChildrenFields();
+      document.getElementById("edit-modal").classList.add("open");
+    }
+
+    function renderChildrenFields() {
+      const cont = document.getElementById("children-list-container");
+      if (!cont) return;
+      cont.innerHTML = "";
+      tempChildren.forEach((ch, idx) => {
+        const row = document.createElement("div");
+        row.style.display = "grid"; row.style.gridTemplateColumns = "1fr 140px 36px"; row.style.gap = "8px"; row.style.alignItems = "center";
+        row.innerHTML = `
+          <input type="text" value="${ch.name}" placeholder="Name des Kindes" oninput="updateChild(${idx}, 'name', this.value)" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+          <input type="text" value="${ch.birth}" placeholder="MM/YYYY" oninput="updateChild(${idx}, 'birth', this.value)" onblur="this.value = formatToMMYYYY(this.value); updateChild(${idx}, 'birth', this.value);" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+          <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="removeChildField(${idx})">✕</button>
+        `;
+        cont.appendChild(row);
+      });
+    }
+
+    function addChildField() { tempChildren.push({ name: "", birth: "" }); renderChildrenFields(); }
+    function removeChildField(idx) { if (tempChildren.length > 1) { tempChildren.splice(idx, 1); renderChildrenFields(); } }
+    function updateChild(idx, field, val) { tempChildren[idx][field] = val; }
+    function closeEditModal() { document.getElementById("edit-modal").classList.remove("open"); }
+
+    async function saveCustomerChanges() {
+      const id = parseInt(document.getElementById("edit-cust-id").value, 10);
+      const c = customers.find(x => x.id === id);
+      if (!c) return;
+
+      c.type = document.getElementById("edit-customer-type").value;
+      c.name = document.getElementById("edit-name").value;
+      c.phone = document.getElementById("edit-phone").value;
+      c.email = document.getElementById("edit-email").value;
+      c.address = document.getElementById("edit-address").value;
+      c.location = document.getElementById("edit-location").value;
+      c.course = document.getElementById("edit-course").value;
+      c.courseStart = document.getElementById("edit-coursestart").value.trim() || "04.11.2026";
+      c.inv = document.getElementById("edit-inv").value.trim();
+      c.notes = document.getElementById("edit-notes").value;
+      c.status = document.getElementById("edit-status").value;
+      c.amount = parseFloat(document.getElementById("edit-amount").value) || 0;
+      c.children = JSON.parse(JSON.stringify(tempChildren.filter(k => k.name.trim() !== ""))).map(k => ({
+        name: k.name,
+        birth: formatToMMYYYY(k.birth)
+      }));
+
+      const cNames = c.children.map(k => k.name).join(", ");
+      const cBirths = c.children.map(k => k.birth).join(", ");
+
+      closeEditModal();
+      renderAll();
+
+      try {
+        const updateUrl = `${SCRIPT_URL}?action=UPDATE_CUSTOMER_FIELD&id=${c.id}&name=${encodeURIComponent(c.name)}&category=${encodeURIComponent(c.type)}&status=${encodeURIComponent(c.status)}&notes=${encodeURIComponent(c.notes)}&phone=${encodeURIComponent(c.phone)}&email=${encodeURIComponent(c.email)}&address=${encodeURIComponent(c.address)}&location=${encodeURIComponent(c.location)}&course=${encodeURIComponent(c.course)}&courseStart=${encodeURIComponent(c.courseStart)}&inv=${encodeURIComponent(c.inv)}&amount=${encodeURIComponent(c.amount)}&childrenNames=${encodeURIComponent(cNames)}&childrenBirths=${encodeURIComponent(cBirths)}&t=` + new Date().getTime();
+        await fetch(updateUrl, { method: "GET", mode: "no-cors" });
+      } catch (err) {}
+    }
+
+    async function deleteCurrentCustomer() {
+      const id = parseInt(document.getElementById("edit-cust-id").value, 10);
+      const c = customers.find(x => x.id === id);
+      if (!c) return;
+
+      const confirmDelete = confirm(`Möchtest du die Buchung von "${c.name}" für den Kurs "${c.course}" wirklich unwiderruflich löschen?`);
+      if (!confirmDelete) return;
+
+      // Aus dem lokalen Array entfernen
+      customers = customers.filter(x => x.id !== id);
+      closeEditModal();
+      renderAll();
+
+      try {
+        const deleteUrl = `${SCRIPT_URL}?action=DELETE_CUSTOMER&id=${c.id}&name=${encodeURIComponent(c.name)}&course=${encodeURIComponent(c.course)}&t=` + new Date().getTime();
+        await fetch(deleteUrl, { method: "GET", mode: "no-cors" });
+      } catch (err) {
+        console.error("Fehler beim Löschen:", err);
+      }
+    }
+
+    function openNewCustomerModal() {
+      document.getElementById("new-name").value = "";
+      document.getElementById("new-phone").value = "";
+      document.getElementById("new-email").value = "";
+      document.getElementById("new-address").value = "";
+      document.getElementById("new-location").value = "";
+      document.getElementById("new-coursestart").value = "04.11.2026";
+      document.getElementById("new-inv").value = "";
+      document.getElementById("new-notes").value = "";
+      document.getElementById("new-amount").value = "119";
+      
+      const cont = document.getElementById("new-children-list-container");
+      cont.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 140px 36px; gap: 8px; align-items: center;">
+          <input type="text" placeholder="Name des Kindes" class="new-child-name" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+          <input type="text" placeholder="MM/YYYY" class="new-child-birth" onblur="this.value = formatToMMYYYY(this.value)" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+          <div></div>
+        </div>
+      `;
+      document.getElementById("new-modal").classList.add("open");
+    }
+
+    function addNewChildField() {
+      const cont = document.getElementById("new-children-list-container");
+      const row = document.createElement("div");
+      row.style.display = "grid"; row.style.gridTemplateColumns = "1fr 140px 36px"; row.style.gap = "8px"; row.style.alignItems = "center";
+      row.innerHTML = `
+        <input type="text" placeholder="Name des Kindes" class="new-child-name" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+        <input type="text" placeholder="MM/YYYY" class="new-child-birth" onblur="this.value = formatToMMYYYY(this.value)" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+        <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="this.parentElement.remove()">✕</button>
+      `;
+      cont.appendChild(row);
+    }
+
+    function closeNewCustomerModal() { document.getElementById("new-modal").classList.remove("open"); }
+
+    async function saveNewCustomer() {
+      const name = document.getElementById("new-name").value.trim();
+      if (!name) { alert("Bitte Namen eingeben."); return; }
+
+      let children = [];
+      document.querySelectorAll(".new-child-name").forEach((inp, idx) => {
+        const bInp = document.querySelectorAll(".new-child-birth")[idx];
+        if (inp.value.trim() !== "") {
+          children.push({ 
+            name: inp.value.trim(), 
+            birth: formatToMMYYYY(bInp ? bInp.value.trim() : "") 
+          });
+        }
+      });
+      if (children.length === 0) children.push({ name: "Kind", birth: "" });
+
+      const cNames = children.map(k => k.name).join(", ");
+      const cBirths = children.map(k => k.birth).join(", ");
+      const cStart = document.getElementById("new-coursestart").value.trim() || "04.11.2026";
+      const chosenCourse = document.getElementById("new-course").value;
+
+      const newCust = {
+        id: customers.length + 1,
+        type: document.getElementById("new-customer-type").value,
+        name: name,
+        phone: document.getElementById("new-phone").value.trim(),
+        email: document.getElementById("new-email").value.trim(),
+        address: document.getElementById("new-address").value.trim(),
+        location: document.getElementById("new-location").value.trim(),
+        children: children,
+        notes: document.getElementById("new-notes").value.trim(),
+        course: chosenCourse,
+        courseStart: cStart,
+        inv: document.getElementById("new-inv").value.trim() || ("2026-" + String(customers.length + 1).padStart(3, "0")),
+        amount: parseFloat(document.getElementById("new-amount").value) || 119,
+        paid: 0,
+        open: parseFloat(document.getElementById("new-amount").value) || 119,
+        status: "Offen"
+      };
+
+      customers.push(newCust);
+      closeNewCustomerModal();
+      renderAll();
+
+      try {
+        const createUrl = `${SCRIPT_URL}?action=CREATE_CUSTOMER&name=${encodeURIComponent(newCust.name)}&type=${encodeURIComponent(newCust.type)}&phone=${encodeURIComponent(newCust.phone)}&email=${encodeURIComponent(newCust.email)}&address=${encodeURIComponent(newCust.address)}&location=${encodeURIComponent(newCust.location)}&course=${encodeURIComponent(newCust.course)}&courseStart=${encodeURIComponent(newCust.courseStart)}&inv=${encodeURIComponent(newCust.inv)}&amount=${encodeURIComponent(newCust.amount)}&status=Offen&notes=${encodeURIComponent(newCust.notes)}&childrenNames=${encodeURIComponent(cNames)}&childrenBirths=${encodeURIComponent(cBirths)}&t=` + new Date().getTime();
+        await fetch(createUrl, { method: "GET", mode: "no-cors" });
+      } catch (err) {}
+    }
+
+    function getSessionDates(startDateStr, totalCount) {
+      let dates = [];
+      let parts = (startDateStr || "04.11.2026").replace(/[\/-]/g, ".").split('.');
+      let d = new Date(parseInt(parts[2], 10) || 2026, (parseInt(parts[1], 10) || 11) - 1, parseInt(parts[0], 10) || 4);
+      const count = totalCount || 16;
+      for (let i = 0; i < count; i++) {
+        let dayStr = String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.';
+        dates.push(dayStr);
+        d.setDate(d.getDate() + 7);
+      }
+      return dates;
+    }
+
+    function getCourseCategory(cName) {
+      const s = (cName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (s.includes("babystepsi") && !s.includes("babystepsii")) return { key: "bs1", label: "🌱 BabySteps I", rank: 1 };
+      if (s.includes("babystepsii") || s.includes("babysteps2")) return { key: "bs2", label: "🌿 BabySteps II", rank: 2 };
+      if (s.includes("maxi")) return { key: "maxi", label: "🚀 MaxiSteps", rank: 3 };
+      return { key: "other", label: "✨ Weitere Kurse", rank: 4 };
+    }
+
+    function renderAttendance() {
+      const headerRow = document.getElementById("attendance-header-row");
+      const tbody = document.getElementById("attendance-table-body");
+      const typeFilter = document.getElementById("filter-attendance-type")?.value || "Aktiver Kunde";
+      if (!headerRow || !tbody) return;
+
+      let filtered = customers.filter(c => {
+        if (typeFilter === "Alle") return true;
+        return (c.type || "Aktiver Kunde") === typeFilter;
+      });
+
+      if (attendanceCourseFilter !== "all") {
+        filtered = filtered.filter(c => {
+          const cat = getCourseCategory(c.course);
+          return cat.key === attendanceCourseFilter;
+        });
+      }
+
+      filtered.sort((a, b) => {
+        const catA = getCourseCategory(a.course);
+        const catB = getCourseCategory(b.course);
+        if (catA.rank !== catB.rank) return catA.rank - catB.rank;
+        return (a.name || "").localeCompare(b.name || "");
+      });
+
+      let maxCols = (attendanceCourseFilter === "maxi" || attendanceCourseFilter === "all") ? 12 : 8;
+      filtered.forEach(c => {
+        const chName = (c.children && c.children[0]) ? c.children[0].name : "Kind";
+        let closedCount = 0;
+        for (let d = 1; d <= 20; d++) {
+          const kSpecific = `${c.name}___${c.course}___${chName}_day_${d}`;
+          const kFallback = `${c.name}______${chName}_day_${d}`;
+          if (attendanceData[kSpecific] === "closed" || attendanceData[kFallback] === "closed") closedCount++;
+        }
+        const isBabySteps = (c.course || "").toLowerCase().includes("babysteps");
+        const base = isBabySteps ? 8 : 12;
+        if (base + closedCount > maxCols) {
+          maxCols = base + closedCount;
+        }
+      });
+
+      let headerHtml = `<th>Teilnehmerin</th><th>Kind</th><th>Kurs & Start</th><th>Fortschritt</th>`;
+      for (let i = 1; i <= maxCols; i++) { 
+        headerHtml += `<th>Woche ${i}</th>`; 
+      }
+      headerRow.innerHTML = headerHtml;
+
+      tbody.innerHTML = "";
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${maxCols + 4}" style="text-align:center; padding:20px; color:var(--text-muted);">Keine Teilnehmerinnen für diesen Filter gefunden.</td></tr>`;
+        return;
+      }
+
+      let lastGroupKey = null;
+
+      filtered.forEach(c => {
+        const cat = getCourseCategory(c.course);
+
+        if (attendanceCourseFilter === "all" && cat.key !== lastGroupKey) {
+          lastGroupKey = cat.key;
+          const groupTr = document.createElement("tr");
+          groupTr.className = "group-header-row";
+          groupTr.innerHTML = `<td colspan="${maxCols + 4}">${cat.label}</td>`;
+          tbody.appendChild(groupTr);
+        }
+
+        (c.children && c.children.length > 0 ? c.children : [{ name: "Kind" }]).forEach((ch) => {
+          let attendedCount = 0;
+          let closedCount = 0;
+
+          for (let dayIndex = 1; dayIndex <= 20; dayIndex++) {
+            const kSpecific = `${c.name}___${c.course}___${ch.name}_day_${dayIndex}`;
+            const kFallback = `${c.name}______${ch.name}_day_${dayIndex}`;
+            const st = attendanceData[kSpecific] || attendanceData[kFallback];
+            if (st === "present") attendedCount++;
+            if (st === "closed") closedCount++;
+          }
+
+          const isBabySteps = (c.course || "").toLowerCase().includes("babysteps");
+          const baseWeeks = isBabySteps ? 8 : 12;
+          const totalWeeksForUser = baseWeeks + closedCount;
+
+          const sessionDates = getSessionDates(c.courseStart, maxCols);
+          let counterClass = attendedCount >= 8 ? "counter-badge counter-complete" : "counter-badge";
+
+          let tr = document.createElement("tr");
+          let rowHtml = `
+            <td><strong>${c.name}</strong></td>
+            <td><strong>${ch.name}</strong></td>
+            <td><span class="badge badge-course">${c.course}</span><br><span style="font-size:0.7rem; color:var(--text-muted);">${c.courseStart} (${baseWeeks} Termine)</span></td>
+            <td><span class="${counterClass}">${attendedCount} / 8</span></td>
+          `;
+          
+          for (let dayIndex = 1; dayIndex <= maxCols; dayIndex++) {
+            if (dayIndex > totalWeeksForUser) {
+              rowHtml += `<td style="color:#cbd5e1;">-</td>`;
+              continue;
+            }
+
+            const kSpecific = `${c.name}___${c.course}___${ch.name}_day_${dayIndex}`;
+            const kFallback = `${c.name}______${ch.name}_day_${dayIndex}`;
+            const st = attendanceData[kSpecific] || attendanceData[kFallback] || "offen";
+            const dateLabel = sessionDates[dayIndex - 1];
+            
+            let badgeClass = "badge-open";
+            let label = dateLabel;
+            if (st === "present") { badgeClass = "badge-present"; label = "✓ " + dateLabel; }
+            else if (st === "excused") { badgeClass = "badge-excused"; label = "⚠ " + dateLabel; }
+            else if (st === "closed") { badgeClass = "badge-closed"; label = "✖ " + dateLabel; }
+
+            rowHtml += `<td><span class="badge ${badgeClass}" onclick="toggleCellAttendance('${c.name.replace(/'/g, "\\'")}', '${c.course.replace(/'/g, "\\'")}', '${ch.name.replace(/'/g, "\\'")}', ${dayIndex})">${label}</span></td>`;
+          }
+
+          tr.innerHTML = rowHtml;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    async function toggleCellAttendance(parentName, courseName, childName, dayIndex) {
+      const key = `${parentName}___${courseName}___${childName}_day_${dayIndex}`;
+      const fallbackKey = `${parentName}______${childName}_day_${dayIndex}`;
+      const order = ["offen", "present", "excused", "closed"];
+      const current = attendanceData[key] || attendanceData[fallbackKey] || "offen";
+      const next = order[(order.indexOf(current) + 1) % order.length];
+      
+      attendanceData[key] = next;
+      renderAttendance();
+
+      try {
+        const updateUrl = `${SCRIPT_URL}?action=UPDATE_ATTENDANCE&parentName=${encodeURIComponent(parentName)}&courseName=${encodeURIComponent(courseName)}&childName=${encodeURIComponent(childName)}&day=${dayIndex}&status=${next}&t=` + new Date().getTime();
+        await fetch(updateUrl, { method: "GET", mode: "no-cors" });
+      } catch (e) {
+        console.error("Anwesenheitsfehler:", e);
+      }
+    }
+
+    let tempDocItems = [];
+    function openDocEditModal() {
+      const c = activeCustomer;
+      if (!c) return;
+      document.getElementById("doc-course-start").value = c.courseStart || "04.11.2026";
+      document.getElementById("doc-date").value = new Date().toLocaleDateString('de-DE');
+      document.getElementById("doc-due-text").value = "Innerhalb 14 Tagen";
+      document.getElementById("doc-discount").value = 0;
+      tempDocItems = [{ desc: "8er Karte – " + c.course, qty: 1, price: c.amount || 119 }];
+      renderDocItemsEditor();
+      document.getElementById("doc-edit-modal").classList.add("open");
+    }
+    function closeDocEditModal() { document.getElementById("doc-edit-modal").classList.remove("open"); }
+    function renderDocItemsEditor() {
+      const cont = document.getElementById("doc-items-container");
+      if (!cont) return;
+      cont.innerHTML = "";
+      tempDocItems.forEach((it, idx) => {
+        const row = document.createElement("div");
+        row.style.display = "grid"; row.style.gridTemplateColumns = "1fr 80px 100px 40px"; row.style.gap = "8px"; row.style.alignItems = "center";
+        row.innerHTML = `
+          <input type="text" value="${it.desc}" oninput="updateDocItem(${idx}, 'desc', this.value)" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem;">
+          <input type="number" value="${it.qty}" oninput="updateDocItem(${idx}, 'qty', this.value)" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem; text-align:center;">
+          <input type="number" step="0.5" value="${it.price}" oninput="updateDocItem(${idx}, 'price', this.value)" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem; text-align:right;">
+          <button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="removeDocItem(${idx})">✕</button>
+        `;
+        cont.appendChild(row);
+      });
+      calculateDocPreviewTotal();
+    }
+    function addDocItem() { tempDocItems.push({ desc: "Zusatzkarte / Geschwister", qty: 1, price: 50 }); renderDocItemsEditor(); }
+    function removeDocItem(idx) { tempDocItems.splice(idx, 1); renderDocItemsEditor(); }
+    function updateDocItem(idx, field, val) {
+      if (field === 'qty') tempDocItems[idx].qty = parseInt(val) || 1;
+      else if (field === 'price') tempDocItems[idx].price = parseFloat(val) || 0;
+      else tempDocItems[idx].desc = val;
+      calculateDocPreviewTotal();
+    }
+    function calculateDocPreviewTotal() {
+      const subtotal = tempDocItems.reduce((sum, it) => sum + (it.qty * it.price), 0);
+      const discount = parseFloat(document.getElementById("doc-discount")?.value) || 0;
+      const total = Math.max(0, subtotal - discount);
+      document.getElementById("doc-preview-total").textContent = total.toFixed(2).replace(".", ",") + " €";
+      return total;
+    }
+    function saveDocSettings() {
+      const c = activeCustomer;
+      c.amount = calculateDocPreviewTotal();
+      closeDocEditModal();
+      renderAll();
+    }
+
+    function selectForDoc(id) { activeCustomer = customers.find(c => c.id === id); switchMainTab("documents"); renderDocument(); }
+    function switchDocType(type) {
+      currentDocType = type;
+      ["contract", "invoice", "receipt"].forEach(t => {
+        const btn = document.getElementById("btn-doc-" + t);
+        if (btn) btn.className = (t === type ? "btn active" : "btn btn-outline");
+      });
+      renderDocument();
+    }
+
+    function renderDocument() {
+      const c = activeCustomer;
+      const doc = document.getElementById("printable-area");
+      if (!c || !doc) return;
+      const logoHtml = `<img src="${companyLogo}" alt="Logo" class="doc-header-logo" onerror="this.style.display='none';">`;
+      const childrenSummary = (c.children || []).map(k => `${k.name} (geb. ${formatToMMYYYY(k.birth) || '-'})`).join(", ");
+      const childrenNamesOnly = (c.children || []).map(k => k.name).join(" & ");
+      const total = c.amount || 119;
+
+      if (currentDocType === "contract") {
+        doc.innerHTML = `
+          <div style="border-bottom: 2px solid var(--primary); padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between;">
+            <div>${logoHtml}<div style="font-size: 1.15rem; font-weight: bold; color: var(--primary);">Teilnahmevertrag</div></div>
+            <div style="text-align: right; font-size: 0.8rem; color: var(--text-muted);">SchwälmerNest · Uhlandstr. 18 · Neukirchen</div>
+          </div>
+          <p><strong>Teilnehmer:</strong> ${c.name}, ${c.address}, ${c.location} (${c.phone})</p>
+          <p style="margin-top:10px;"><strong>Kind(er):</strong> ${childrenSummary}</p>
+          <p style="margin-top:15px;">Kurs: <strong>${c.course}</strong> (Start: ${c.courseStart || '04.11.2026'})</p>
+          <p style="margin-top:15px;">Gebühr: <strong>${total.toFixed(2).replace(".", ",")} €</strong></p>
+          <div style="margin-top: 50px; display: flex; justify-content: space-between; font-size: 0.85rem;">
+            <div style="border-top: 1px solid #333; width: 220px; text-align: center; padding-top: 6px;">Unterschrift Dienstleister</div>
+            <div style="border-top: 1px solid #333; width: 220px; text-align: center; padding-top: 6px;">Unterschrift Teilnehmer:in</div>
+          </div>
+        `;
+      } else if (currentDocType === "invoice") {
+        doc.innerHTML = `
+          <div style="border-bottom: 2px solid var(--primary); padding-bottom: 14px; margin-bottom: 20px; display:flex; justify-content:space-between;">
+            <div>${logoHtml}<div style="font-size: 1.4rem; font-weight: 700; color: var(--primary);">Rechnung ${c.inv}</div></div>
+            <div style="text-align: right; font-size: 0.8rem; color: var(--text-muted);">SchwälmerNest · Uhlandstr. 18</div>
+          </div>
+          <p><strong>Empfänger:</strong><br>${c.name}<br>${c.address}<br>${c.location}</p>
+          <table style="margin: 20px 0;"><thead><tr><th>Beschreibung</th><th style="text-align:center;">Menge</th><th style="text-align:right;">Gesamt</th></tr></thead><tbody><tr><td>8er Karte – ${c.course}</td><td style="text-align:center;">1</td><td style="text-align:right;">${total.toFixed(2)} €</td></tr></tbody></table>
+          <div style="text-align: right; font-size: 1.15rem; font-weight: 700;">Gesamtbetrag: ${total.toFixed(2).replace(".", ",")} €</div>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top:20px;">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>
+        `;
+      } else if (currentDocType === "receipt") {
+        doc.innerHTML = `
+          <div style="border-bottom: 2px solid var(--primary); padding-bottom: 14px; margin-bottom: 20px; display:flex; justify-content:space-between;">
+            <div>${logoHtml}<div style="font-size: 1.4rem; font-weight: 700; color: var(--primary);">Barquittung Q${c.inv}</div></div>
+            <div style="text-align: right; font-size: 0.8rem; color: var(--text-muted);">SchwälmerNest</div>
+          </div>
+          <p>Erhalten von <strong>${c.name}</strong> für ${c.course} (${childrenNamesOnly}) den Betrag von <strong>${total.toFixed(2).replace(".", ",")} €</strong>.</p>
+          <div style="border-top: 1px solid #333; width: 220px; text-align: center; padding-top: 6px; margin-top:50px; font-size: 0.85rem;">Unterschrift Barempfänger</div>
+        `;
+      }
+    }
+
+    function renderMessages() {
+      const list = document.getElementById("message-contact-list");
+      if (!list) return;
+      list.innerHTML = "";
+      customers.forEach(c => {
+        const div = document.createElement("div");
+        div.style.padding = "10px"; div.style.borderRadius = "6px"; div.style.cursor = "pointer"; div.style.marginBottom = "6px";
+        div.style.border = c.id === activeCustomer.id ? "2px solid var(--primary-light)" : "1px solid var(--border)";
+        div.style.background = c.id === activeCustomer.id ? "#ecfdf5" : "white";
+        const cNames = (c.children || []).map(k => k.name).join(" & ");
+        div.innerHTML = `<strong>${c.name}</strong> <span style="font-size:0.75rem; color:var(--primary); font-weight:bold;">[${c.course}]</span><br><span style="font-size:0.75rem; color:var(--text-muted);">${cNames} • ${c.phone}</span>`;
+        div.onclick = () => { activeCustomer = c; renderMessages(); };
+        list.appendChild(div);
+      });
+      document.getElementById("msg-recipient-label").textContent = `Empfänger: ${activeCustomer.name} - ${activeCustomer.course} (${activeCustomer.phone})`;
+      setTemplate("invoice");
+    }
+
+    function setTemplate(t) {
+      const c = activeCustomer;
+      const firstName = (c.name || "").split(" ")[0];
+      const cNames = (c.children || []).map(k => k.name).join(" & ");
+      const msgInput = document.getElementById("msg-text");
+      if (!msgInput) return;
+      if (t === 'invoice') msgInput.value = `Hallo ${firstName}, für deinen Kurs "${c.course}" mit ${cNames} liegt Rechnung ${c.inv} über ${(c.amount||0).toFixed(2)} € vor. Liebe Grüße, Katharina`;
+      else if (t === 'welcome') msgInput.value = `Hallo ${firstName}! Dein Platz im Kurs "${c.course}" mit ${cNames} ist reserviert. Bis bald!`;
+      else msgInput.value = `Hallo ${firstName}, kurze Erinnerung an unseren Kurs morgen. Liebe Grüße!`;
+    }
+
+    function sendWhatsApp() {
+      let p = (activeCustomer.phone || "").replace(/[^0-9]/g, "");
+      if (p.startsWith("0")) p = "49" + p.substring(1);
+      window.open(`https://wa.me/${p}?text=` + encodeURIComponent(document.getElementById("msg-text").value), "_blank");
+    }
+
+    function sendEmail() {
+      window.location.href = `mailto:${activeCustomer.email}?subject=SchwälmerNest Kurs ${encodeURIComponent(activeCustomer.course)}&body=` + encodeURIComponent(document.getElementById("msg-text").value);
+    }
+
+    window.onload = function() {
+      loadFromCloud();
+      setInterval(loadFromCloud, 60000);
+    };
+  </script>
+</body>
+</html>
